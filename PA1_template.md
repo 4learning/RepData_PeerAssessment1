@@ -326,9 +326,11 @@ weekday<-new[which(new$weekend=='FALSE'), ]
 weekend<-new[which(new$weekend=='TRUE'), ]
 weekday_mean_interval<-aggregate(weekday$steps, by=list(Category=weekday$interval), FUN=mean)
 weekend_mean_interval<-aggregate(weekend$steps, by=list(Category=weekend$interval), FUN=mean)
-par(mfrow=c(2,1))
-plot(as.numeric(weekday_mean_interval$Category), as.numeric(weekday_mean_interval$x), type="l", xlab="intervals", ylab="mean", main="weekday")
-plot(as.numeric(weekend_mean_interval$Category), as.numeric(weekend_mean_interval$x), type="l", xlab="intervals", ylab="mean", main="weekend")
+weekday_mean_interval$weekday<-"weekday"
+weekend_mean_interval$weekday<-"weekend"
+rbind_mean_interval<-rbind(weekday_mean_interval, weekend_mean_interval)
+library(ggplot2)
+qplot(Category,x,data=rbind_mean_interval, facets = weekday ~ ., geom="line", xlab="interval", ylab="mean")
 ```
 
 ![](RepData_Project1_files/figure-markdown_github/unnamed-chunk-10-1.png)<!-- -->

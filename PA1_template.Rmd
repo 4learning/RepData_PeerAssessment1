@@ -1,25 +1,85 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "PA1_template"
+author: Weihong
+date: Feb 28, 2016
+output:
+  md_document:
+    variant: markdown_github
 ---
 
-
-## Loading and preprocessing the data
-
-
-
-## What is mean total number of steps taken per day?
+Code for reading in the dataset and/or processing the data (ignore misiing values)
+Histogram of the total number of steps taken each day
 
 
+```{r}
+activity<-read.csv("activity.csv", header=TRUE)
+activity.filter<-na.omit(activity)
+steps_sum<-aggregate(activity.filter$steps, by=list(Category=activity.filter$date), FUN=sum)
+hist(steps_sum$x, main="Histogram of total steps per day", xlab="Total steps")
+steps_mean<-aggregate(activity.filter$steps, by=list(Category=activity.filter$date), FUN=mean)
+steps_median<-aggregate(activity.filter$steps, by=list(Category=activity.filter$date), FUN=median)
+```
 
-## What is the average daily activity pattern?
+Mean number of steps taken each day, ignoring missing values
+```{r}
+steps_mean
+```
 
+Median number of steps taken each day, ignoring missing values
+```{r}
+steps_median
+```
 
+Time series plot of the average number of steps taken
+```{r}
+steps_mean_interval<-aggregate(activity.filter$steps, by=list(Category=activity.filter$interval), FUN=mean)
+plot(as.numeric(steps_mean_interval$Category), as.numeric(steps_mean_interval$x), type="l", xlab="intervals", ylab="mean")
+```
 
-## Imputing missing values
+The 5-minute interval that, on average, contains the maximum number of steps
+```{r}
+steps_mean_interval[which(steps_mean_interval$x==max(steps_mean_interval$x)), ]
+```
 
+Code to describe and show a strategy for imputing missing data
+```{r}
+a.na<-activity[!complete.cases(activity), ]
+fill<-merge(a.na, steps_mean_interval, by.x="interval", by.y="Category", all.x=TRUE)
+fill$steps=fill$x
+fill<-fill[, c(2,3,1)]
+new<-rbind(activity.filter, fill)
+```
 
+Histogram of the total number of steps taken each day after missing values are imputed
+```{r}
+new_sum<-aggregate(new$steps, by=list(Category=new$date), FUN=sum)
+hist(new_sum$x, main="Histogram of total steps per day", xlab="Total steps")
+new_mean<-aggregate(new$steps, by=list(Category=new$date), FUN=mean)
+new_median<-aggregate(new$steps, by=list(Category=new$date), FUN=median)
+```
 
-## Are there differences in activity patterns between weekdays and weekends?
+mean without missing values vs. imputed missing values
+```{r}
+merge(steps_mean, new_mean, by="Category", all=TRUE)
+```
+median without missing values vs. imputed missing values
+```{r}
+merge(steps_median, new_median, by="Category", all=TRUE)
+```
+
+Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+All of the R code needed to reproduce the results (numbers, plots, etc.) in the report
+```{r}
+new$date<-as.Date(new$date)
+library(chron)
+new$weekend<-chron::is.weekend(new$date)
+weekday<-new[which(new$weekend=='FALSE'), ]
+weekend<-new[which(new$weekend=='TRUE'), ]
+weekday_mean_interval<-aggregate(weekday$steps, by=list(Category=weekday$interval), FUN=mean)
+weekend_mean_interval<-aggregate(weekend$steps, by=list(Category=weekend$interval), FUN=mean)
+weekday_mean_interval$weekday<-"weekday"
+weekend_mean_interval$weekday<-"weekend"
+rbind_mean_interval<-rbind(weekday_mean_interval, weekend_mean_interval)
+library(ggplot2)
+qplot(Category,x,data=rbind_mean_interval, facets = weekday ~ ., geom="line", xlab="interval", ylab="mean")
+```
